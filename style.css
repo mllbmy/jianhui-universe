@@ -8,3 +8,6 @@
 .fallback-map{display:flex;flex-wrap:wrap;gap:12px;max-width:600px;margin-top:25px;pointer-events:auto}.fallback-map button{padding:13px 18px;border:1px solid var(--line);border-radius:6px;font-size:12px}@media(pointer:coarse){.world-label,.overview-button,.icon-button{min-height:44px;min-width:44px}}
 
 @media(orientation:landscape) and (max-height:550px){.story{top:50%;transform:translateY(-50%)}.story h1{font-size:28px;margin-bottom:10px}.description{font-size:10.5px;margin-bottom:10px}.footnote{font-size:7.5px;margin-top:8px}.achievement{margin-bottom:12px}}
+
+/* Keep the exhibition as the focal point; satellite labels already name its content. */
+#planet-caption{display:none}
