@@ -1,5 +1,6 @@
+import GSAP from './assets/vendor/gsap.module.js';
 // Spatial exhibit layouts and an accessible, gesture-driven certificate orbit.
-const gs=window.gsap, reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const gs=GSAP.gsap, reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function certificateGallery(host,certificates,initialId){
  const list=certificates.filter(c=>c.image);let index=Math.max(0,list.findIndex(c=>c.id===initialId)),angle=index,wide=false,destroyed=false,drag=null;

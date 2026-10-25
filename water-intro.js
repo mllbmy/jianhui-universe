@@ -1,4 +1,4 @@
-import * as THREE from './assets/vendor/three.module.js';
+import * as THREE from './assets/vendor/three.module.min.js';
 
 // A separate, persistent underwater scene. The universe is revealed only on entry.
 export function createWaterIntro(renderer){
@@ -7,7 +7,10 @@ export function createWaterIntro(renderer){
  const state={exit:0},point=new THREE.Vector2(),target=new THREE.Vector2();let energy=0,lastTime=0,lastX=0,lastY=0,imageReady=false,disposed=false;
  const placeholder=new THREE.DataTexture(new Uint8Array([3,14,26,255]),1,1);placeholder.needsUpdate=true;
  const uniforms={uTime:{value:0},uAspect:{value:innerWidth/innerHeight},uOpacity:{value:1},uPointer:{value:point},uEnergy:{value:0},uScale:{value:innerHeight*renderer.getPixelRatio()},uImage:{value:placeholder},uImageAspect:{value:16/9},uReady:{value:0}};
- new THREE.TextureLoader().load('assets/images/water-entry-v5.png',texture=>{if(disposed){texture.dispose();return;}texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());uniforms.uImageAspect.value=texture.image.width/texture.image.height;uniforms.uImage.value=texture;imageReady=true;});
+ // Reuse the already fetched responsive poster instead of downloading the same image again.
+ const poster=document.querySelector('#entry-image');
+ const usePoster=()=>{if(disposed||imageReady||!poster?.naturalWidth)return;const texture=new THREE.Texture(poster);texture.needsUpdate=true;texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());uniforms.uImageAspect.value=poster.naturalWidth/poster.naturalHeight;uniforms.uImage.value=texture;imageReady=true;};
+ if(poster?.complete)usePoster();else poster?.addEventListener('load',usePoster,{once:true});
  const noise=`float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1)),f.x),f.y);}float cloud(vec2 p){return noise(p)*.55+noise(p*2.1)*.28+noise(p*4.3)*.17;}`;
  const background=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms,transparent:true,depthWrite:false,depthTest:false,vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,.999,1.);}`,fragmentShader:`
  varying vec2 vUv;uniform float uTime,uAspect,uOpacity,uEnergy,uReady,uImageAspect;uniform vec2 uPointer;uniform sampler2D uImage;${noise}
