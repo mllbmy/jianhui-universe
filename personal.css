@@ -1,0 +1,20 @@
+/* Keep the spatial artwork; make the person and evidence readable. */
+.entry-identity{position:absolute;top:clamp(24px,6vh,64px);right:var(--side);text-align:right;pointer-events:auto;text-shadow:0 2px 18px #020b16}
+.entry-identity h1{font-family:var(--display);font-size:32px;line-height:1.3;font-weight:400;margin:0 0 7px;letter-spacing:.04em}
+.entry-identity p{font-size:12px;color:#c7e0f1;margin:0;line-height:1.8}
+.entry-identity button{display:inline-flex;align-items:center;gap:14px;min-height:44px;margin-top:7px;font-size:12px;color:#c7e0f1;padding:5px 0}
+.entry-identity svg{width:18px;height:18px}
+.entry-identity button:disabled{opacity:.45;cursor:wait}
+.entry-identity button:hover{color:#fff}
+body:not(.is-opening) .entry-identity{display:none}
+.entry-identity button:focus-visible,.certificate-controls button:focus-visible{outline:2px solid #a7e6ff;outline-offset:4px}
+.project-facts{margin:22px 0 26px;font-size:14px;line-height:1.8}
+.project-facts>div{display:grid;grid-template-columns:78px minmax(0,1fr);gap:12px;padding:13px 0;border-top:1px solid #a4d1f026}
+.project-facts dt{color:#a8d8f2;font-weight:500}
+.project-facts dd{margin:0;color:#d5e5f2}
+.certificate-controls{flex-wrap:wrap;gap:8px 10px;flex-shrink:0}
+.certificate-controls .cert-play,.certificate-controls .cert-wide{height:40px;min-height:40px;font-size:11px;border-radius:22px;padding:0 13px;margin-left:0}
+.certificate-controls .cert-play[aria-pressed=true]{background:#a3dfff1f;border-color:#a3dfff80}
+.certificate-controls .cert-play:disabled{opacity:.45;cursor:default}
+@media(max-width:700px){.entry-identity{top:24px;left:23px;right:23px;text-align:left;z-index:2}.launch:after{content:"";position:absolute;inset:0 0 auto;height:185px;background:linear-gradient(#020b16c4,transparent);pointer-events:none}.entry-identity h1{font-size:26px}.entry-identity p,.entry-identity button{font-size:11px}.project-facts{font-size:12px;margin:18px 0}.project-facts>div{grid-template-columns:65px minmax(0,1fr);gap:10px;padding:10px 0}.certificate-controls{gap:6px 8px}.certificate-controls .cert-play,.certificate-controls .cert-wide{font-size:10px;padding:0 11px}.certificate-controls .certificate-count{min-width:43px}}
+@media(orientation:landscape) and (max-height:550px){.entry-identity{top:15px;left:auto;right:var(--side);text-align:right}.entry-identity h1{font-size:21px;margin-bottom:2px}.entry-identity p{font-size:10px}.entry-identity button{margin-top:0;min-height:35px;font-size:10px}}

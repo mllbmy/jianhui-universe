@@ -26,7 +26,7 @@ export function createWaterIntro(renderer){
  function fitCards(){for(const card of [background,veil]){const h=2*Math.tan(Math.PI/8)*(28-card.position.z)*uniforms.uOverscan.value;card.scale.set(h*camera.aspect/2,h/2,1);}}
  fitCards();
  let seed=9182;const rand=()=>{seed=seed*16807%2147483647;return(seed-1)/2147483646;};
- const narrow=innerWidth<701,count=narrow?56000:128000,positions=new Float32Array(count*3),sizes=new Float32Array(count),seeds=new Float32Array(count),types=new Float32Array(count);
+ const narrow=innerWidth<701,count=narrow?44000:128000,positions=new Float32Array(count*3),sizes=new Float32Array(count),seeds=new Float32Array(count),types=new Float32Array(count);
  for(let k=0;k<count;k++){const type=k<90?2:k<count*.02?1:0;types[k]=type;
   positions.set(type===0?[rand(),rand(),rand()*2-1]:[rand()*2-1,rand()*36-18,rand()*35-20],k*3);
   seeds[k]=rand();sizes[k]=type===2?.45+rand()*1.1:.025+Math.pow(rand(),4)*.16;
@@ -44,7 +44,7 @@ export function createWaterIntro(renderer){
    p=vec3((flowUv.x*2.-1.)*h*uAspect,(flowUv.y*2.-1.)*h,z);
    vColor=color;vAlpha=smoothstep(.004,.16,light)*(.7+.3*aSeed)*(1.-uPhoto)*smoothstep(0.,.025,flowUv.y)*(1.-smoothstep(.975,1.,flowUv.y));
    vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
-   gl_PointSize=clamp(uScale*${narrow?'0.0068':'0.0046'}*(28.-z)/max(1.,-mv.z),.8,10.);
+   gl_PointSize=clamp(uScale*${narrow?'0.0076':'0.0046'}*(28.-z)/max(1.,-mv.z),.8,10.);
   }else{
    float y=mod(position.y+18.-uTime*(.12+aSeed*.18),36.)-18.;
    p=vec3(position.x*22.*min(uAspect,1.8)+sin(uTime*.18+aSeed*7.)*.3,y,position.z);
