@@ -2,29 +2,278 @@ import GSAP from './assets/vendor/gsap.module.js';
 // Spatial exhibit layouts and an accessible, gesture-driven certificate orbit.
 const gs=GSAP.gsap, reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function certificateGallery(host,certificates,initialId){
- const priority=['mati-national-silver','outsourcing-national-third','soundlane-mobile-first'];const rank=c=>{const k=priority.indexOf(c.id);return k<0?priority.length:k;};const list=certificates.filter(c=>c.image).sort((a,b)=>rank(a)-rank(b));let index=Math.max(0,list.findIndex(c=>c.id===initialId)),angle=index,wide=false,destroyed=false,drag=null,playing=false;
+export function certificateGallery(host, certificates, initialId) {
+ const priority = ['mati-national-silver', 'outsourcing-national-third', 'soundlane-mobile-first'];
+ const rank = certificate => {
+  const position = priority.indexOf(certificate.id);
+  return position < 0 ? priority.length : position;
+ };
+ const list = certificates.filter(certificate => certificate.image).sort((a, b) => rank(a) - rank(b));
+ if (!list.length) {
+  host.replaceChildren();
+  return {destroy() {}, select() {}};
+ }
+
+ let index = Math.max(0, list.findIndex(certificate => certificate.id === initialId));
+ let displayedIndex = index;
+ let angle = index;
+ let wide = false;
+ let drag = null;
+ let suppressPointerClick = false;
+ let playback = null;
+ let lightbox = null;
+ const motion = {angle};
+ const award = certificate => certificate.id === 'robot-vision-third'
+  ? '智能机器人视觉系统挑战赛初赛三等奖'
+  : certificate.award;
+
  host.classList.add('certificate-exhibit');
- host.innerHTML=`<div class="certificate-space" tabindex="0" aria-label="证书三维展览，可用左右方向键切换"><div class="certificate-horizon"></div><div class="certificate-orbit"></div></div><div class="certificate-controls"><button class="cert-prev" aria-label="上一张证书">‹</button><span class="certificate-count"></span><button class="cert-next" aria-label="下一张证书">›</button><button class="cert-play" aria-pressed="false">自动轮播</button><button class="cert-wide" aria-pressed="false">全部预览</button></div><div class="certificate-caption" aria-live="polite"></div><p class="certificate-hint">左右拖动旋转 · 点击证书查看原图</p><div class="certificate-grid" hidden></div>`;
- const q=s=>host.querySelector(s),space=q('.certificate-space'),orbit=q('.certificate-orbit'),grid=q('.certificate-grid');
- const award=c=>c.id==='robot-vision-third'?'智能机器人视觉系统挑战赛初赛三等奖':c.award;
- const cards=list.map((c,k)=>{const b=document.createElement('button');b.className='certificate-card';b.setAttribute('aria-label',c.title+'，'+award(c));b.innerHTML=`<img src="${esc(c.image)}" alt="${esc(c.title+'，'+award(c))}" draggable="false"><span>${esc(award(c))}</span>`;b.onclick=()=>{if(drag?.moved)return;if(k!==index)select(k);else inspect(c);};orbit.append(b);const item=document.createElement('button');item.className='certificate-thumb';item.innerHTML=`<img src="${esc(c.image)}" alt="${esc(c.title)}" loading="lazy"><strong>${esc(award(c))}</strong><span>${esc(c.title)}</span>`;item.onclick=()=>{wide=false;setWide();select(k);};grid.append(item);return b;});
- function inspect(c){const lightbox=document.createElement('dialog');lightbox.className='certificate-original';lightbox.innerHTML=`<button class="original-close" aria-label="关闭原图">关闭原图 ×</button><img src="${esc(c.image)}" alt="${esc(c.title)}"><p>${esc(c.title)} · ${esc(award(c))}</p>`;host.append(lightbox);lightbox.querySelector('button').onclick=()=>lightbox.close();lightbox.addEventListener('close',()=>lightbox.remove());lightbox.showModal();}
- function layout(){if(destroyed)return;const width=space.clientWidth,height=space.clientHeight;if(width<1||height<1)return;const maxHeight=Math.min(320,height*.77),maxWidth=Math.min(280,width*.43),radius=Math.max(0,(width-maxWidth)*.5-16),step=Math.PI*2/list.length;cards.forEach((b,k)=>{const ratio=list[k].width/list[k].height,w=Math.min(maxWidth,maxHeight*ratio),h=w/ratio;b.style.width=w+'px';b.style.height=h+'px';const a=(k-angle)*step;const front=Math.cos(a),x=Math.sin(a)*radius,z=(front-1)*radius*.8;const focus=Math.max(0,front),fade=Math.max(0,Math.min(1,(front-.08)/.35));b.style.transform=`translate(-50%,-50%) translate3d(${x}px,${Math.sin(a)*-8}px,${z}px) rotateY(${-a*180/Math.PI}deg)`;b.style.opacity=String((.25+.75*focus)*fade);b.style.zIndex=String(Math.round(100+front*100));b.style.filter=`brightness(${.55+.45*focus})`;b.style.pointerEvents=front<.12?'none':'auto';b.tabIndex=k===index?0:-1;b.setAttribute('aria-current',k===index?'true':'false');});}
- function caption(){const c=list[index];q('.certificate-count').textContent=`${String(index+1).padStart(2,'0')} / ${String(list.length).padStart(2,'0')}`;q('.certificate-caption').innerHTML=`<h3>${esc(c.title)}</h3><strong>${esc(award(c))}</strong><p>${esc(c.context)} ${esc(c.experience)}</p>`;if(!reduced.matches)gs.fromTo(q('.certificate-caption'),{opacity:.3,y:8},{opacity:1,y:0,duration:.3,overwrite:true});}
- const motion={angle};function select(k,manual=true){if(manual){playing=false;syncPlay();}index=(k%list.length+list.length)%list.length;const nearest=angle+(((index-angle)%list.length+list.length*1.5)%list.length-list.length*.5);gs.killTweensOf(motion);motion.angle=angle;gs.to(motion,{angle:nearest,duration:reduced.matches?0:.70,ease:'power3.inOut',onUpdate:()=>{angle=motion.angle;layout();}});caption();}
- function setWide(){space.hidden=wide;grid.hidden=!wide;q('.certificate-caption').hidden=wide;q('.certificate-hint').hidden=wide;q('.certificate-count').hidden=wide;q('.cert-prev').hidden=wide;q('.cert-next').hidden=wide;q('.cert-play').hidden=wide;q('.cert-wide').textContent=wide?'返回三维展厅':'全部预览';q('.cert-wide').setAttribute('aria-pressed',String(wide));host.classList.toggle('gallery-wide',wide);if(!wide)layout();}
- function syncPlay(){q('.cert-play').textContent=playing?'暂停轮播':'自动轮播';q('.cert-play').setAttribute('aria-pressed',String(playing));q('.cert-play').disabled=reduced.matches;}
- const motionPreference=()=>{if(reduced.matches)playing=false;syncPlay();};reduced.addEventListener('change',motionPreference);syncPlay();q('.cert-play').onclick=()=>{playing=!playing;syncPlay();};
- q('.cert-prev').onclick=()=>select(index-1);q('.cert-next').onclick=()=>select(index+1);q('.cert-wide').onclick=()=>{playing=false;syncPlay();wide=!wide;setWide();};
- space.onkeydown=e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();e.stopPropagation();select(index+(e.key==='ArrowRight'?1:-1));};
- space.onpointerdown=e=>{if(e.button!==0)return;playing=false;syncPlay();gs.killTweensOf(motion);drag={x:e.clientX,start:angle,moved:false};space.setPointerCapture(e.pointerId);};
- space.onpointermove=e=>{if(!drag)return;const dx=e.clientX-drag.x;if(Math.abs(dx)>7)drag.moved=true;if(drag.moved){angle=drag.start-dx/160;layout();}};
- space.onpointerup=e=>{if(!drag)return;const moved=drag.moved;space.releasePointerCapture(e.pointerId);if(moved){select(Math.round(angle));setTimeout(()=>drag=null,80);}else{drag=null;const hit=document.elementFromPoint(e.clientX,e.clientY)?.closest('.certificate-card');if(hit){const k=cards.indexOf(hit);if(k===index)inspect(list[k]);else select(k);}}};
- space.onpointercancel=()=>{if(drag)select(Math.round(angle));drag=null;};
- const observer=new ResizeObserver(layout);observer.observe(space);layout();caption();
- const auto=setInterval(()=>{if(playing&&!destroyed&&!reduced.matches&&!wide&&!document.hidden&&!space.matches(':hover')&&!space.contains(document.activeElement)&&!drag)select(index+1,false);},3200);
- return {destroy(){destroyed=true;reduced.removeEventListener('change',motionPreference);clearInterval(auto);gs.killTweensOf(motion);observer.disconnect();host.classList.remove('certificate-exhibit','gallery-wide');},select};
+ host.innerHTML = `<div class="certificate-space" role="group" tabindex="0" aria-label="证书三维展览，可用左右方向键切换">
+  <div class="certificate-horizon" aria-hidden="true"></div><div class="certificate-orbit"></div>
+ </div>
+ <div class="certificate-controls">
+  <div class="certificate-pagination" role="group" aria-label="切换证书">
+   <button class="cert-prev" aria-label="上一张证书"></button>
+   <span class="certificate-count"></span>
+   <button class="cert-next" aria-label="下一张证书"></button>
+  </div>
+  <button class="cert-play" aria-pressed="false">自动轮播</button>
+  <button class="cert-wide" aria-pressed="false">全部预览</button>
+ </div>
+ <div class="certificate-caption">
+  <div class="certificate-copy" aria-live="polite"></div>
+  <button class="cert-original">查看证书原图</button>
+ </div>
+ <div class="certificate-grid" hidden></div>`;
+ const q = selector => host.querySelector(selector);
+ const space = q('.certificate-space');
+ const orbit = q('.certificate-orbit');
+ const grid = q('.certificate-grid');
+ const navigation = q('.certificate-pagination');
+ const caption = q('.certificate-caption');
+ const captionCopy = q('.certificate-copy');
+ const count = q('.certificate-count');
+ const playbackButton = q('.cert-play');
+ const wideButton = q('.cert-wide');
+ const originalButton = q('.cert-original');
+
+ const cards = list.map((certificate, position) => {
+  const card = document.createElement('button');
+  card.className = 'certificate-card';
+  card.innerHTML = `<img src="${esc(certificate.image)}" alt="" draggable="false" decoding="async">`;
+  card.onclick = event => {
+   if (suppressPointerClick && event.detail > 0) return;
+   if (position === displayedIndex) inspect(certificate);
+   else select(position);
+  };
+  orbit.append(card);
+
+  const thumbnail = document.createElement('button');
+  thumbnail.className = 'certificate-thumb';
+  thumbnail.innerHTML = `<img src="${esc(certificate.image)}" alt="" loading="lazy" decoding="async">
+   <strong>${esc(award(certificate))}</strong><span>${esc(certificate.title)}</span>`;
+  thumbnail.onclick = () => {
+   showOverview(false);
+   select(position);
+   originalButton.focus({preventScroll: true});
+  };
+  grid.append(thumbnail);
+  return card;
+ });
+
+ function inspect(certificate) {
+  if (lightbox?.open) return;
+  setPlaying(false);
+  lightbox = document.createElement('dialog');
+  lightbox.className = 'certificate-original';
+  lightbox.setAttribute('aria-label', `证书原图：${certificate.title}`);
+  lightbox.innerHTML = `<button class="original-close" autofocus>关闭原图</button>
+   <img src="${esc(certificate.image)}" alt="${esc(certificate.title + '，' + award(certificate))}">
+   <p>${esc(certificate.title)} · ${esc(award(certificate))}</p>`;
+  host.append(lightbox);
+  lightbox.querySelector('button').onclick = () => lightbox.close();
+  lightbox.addEventListener('close', event => {
+   event.currentTarget.remove();
+   lightbox = null;
+  }, {once: true});
+  lightbox.showModal();
+ }
+
+ function layout() {
+  const width = space.clientWidth;
+  const height = space.clientHeight;
+  if (!width || !height) return;
+
+  const maxHeight = Math.min(320, height * .8);
+  const maxWidth = Math.min(284, width * .46);
+  const radius = Math.max(0, (width - maxWidth) * .5 - 16);
+  const step = Math.PI * 2 / list.length;
+  cards.forEach((card, position) => {
+   const ratio = list[position].width / list[position].height;
+   const cardWidth = Math.min(maxWidth, maxHeight * ratio);
+   const offset = (position - angle) * step;
+   const front = Math.cos(offset);
+   const x = Math.sin(offset) * radius;
+   const z = (front - 1) * radius * .8;
+   const focus = Math.max(0, front);
+   const fade = Math.max(0, Math.min(1, (front - .08) / .35));
+   card.style.width = cardWidth + 'px';
+   card.style.height = cardWidth / ratio + 'px';
+   card.style.transform = `translate(-50%, -50%) translate3d(${x}px,${Math.sin(offset) * -8}px,${z}px) rotateY(${-offset * 180 / Math.PI}deg)`;
+   card.style.opacity = String((.25 + .75 * focus) * fade);
+   card.style.zIndex = String(Math.round(100 + front * 100));
+   card.style.filter = `brightness(${.55 + .45 * focus})`;
+   card.style.visibility = front < .12 && position !== displayedIndex ? 'hidden' : 'visible';
+   card.style.pointerEvents = front < .12 ? 'none' : 'auto';
+   card.tabIndex = position === displayedIndex ? 0 : -1;
+   card.setAttribute('aria-current', String(position === displayedIndex));
+  });
+ }
+
+ function renderCaption() {
+  const certificate = list[displayedIndex];
+  count.textContent = `${displayedIndex + 1} / ${list.length}`;
+  count.setAttribute('aria-label', `第 ${displayedIndex + 1} 张，共 ${list.length} 张`);
+  captionCopy.innerHTML = `<h3>${esc(certificate.title)}</h3><strong>${esc(award(certificate))}</strong>
+   <p>${esc(certificate.context)} ${esc(certificate.experience)}</p>`;
+  caption.scrollTop = 0;
+  cards.forEach((card, position) => {
+   const action = position === displayedIndex ? '查看原图' : '切换到';
+   card.setAttribute('aria-label', `${action} ${list[position].title}，${award(list[position])}`);
+  });
+ }
+
+ function select(position, manual = true) {
+  if (manual) setPlaying(false);
+  index = (position % list.length + list.length) % list.length;
+  const offset = index - angle;
+  const half = list.length * .5;
+  const nearest = angle + ((offset % list.length + list.length * 1.5) % list.length - half);
+  gs.killTweensOf(motion);
+  motion.angle = angle;
+  const settle = () => {
+   angle = nearest;
+   displayedIndex = index;
+   layout();
+   renderCaption();
+  };
+  if (reduced.matches || Math.abs(nearest - angle) < .001) {
+   settle();
+  } else {
+   gs.to(motion, {angle: nearest, duration: .62, ease: 'power3.inOut', onUpdate() {
+    angle = motion.angle;
+    layout();
+   }, onComplete: settle});
+  }
+ }
+
+ function showOverview(next) {
+  setPlaying(false);
+  wide = next;
+  space.hidden = wide;
+  grid.hidden = !wide;
+  caption.hidden = wide;
+  navigation.hidden = wide;
+  playbackButton.hidden = wide;
+  wideButton.textContent = wide ? '返回三维展厅' : '全部预览';
+  wideButton.setAttribute('aria-pressed', String(wide));
+  host.classList.toggle('gallery-wide', wide);
+  host.scrollTop = 0;
+  grid.scrollTop = 0;
+  const detailLayout = host.closest('.detail-layout');
+  if (detailLayout) detailLayout.scrollTop = 0;
+  if (!wide) layout();
+ }
+
+ function setPlaying(play) {
+  clearInterval(playback);
+  playback = null;
+  if (play && !reduced.matches) {
+   playback = setInterval(() => {
+    if (!document.hidden && !space.matches(':hover') && !space.contains(document.activeElement) && !drag) {
+     select(index + 1, false);
+    }
+   }, 3200);
+  }
+  playbackButton.textContent = playback ? '暂停轮播' : '自动轮播';
+  playbackButton.setAttribute('aria-pressed', String(Boolean(playback)));
+  playbackButton.disabled = reduced.matches;
+ }
+
+ const motionPreference = () => {
+  setPlaying(false);
+  if (reduced.matches) select(index);
+ };
+ reduced.addEventListener('change', motionPreference);
+ setPlaying(false);
+ playbackButton.onclick = () => setPlaying(!playback);
+ q('.cert-prev').onclick = () => select(index - 1);
+ q('.cert-next').onclick = () => select(index + 1);
+ wideButton.onclick = () => showOverview(!wide);
+ originalButton.onclick = () => inspect(list[displayedIndex]);
+
+ space.onkeydown = event => {
+  if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  // Move focus off a rotating card before it disappears behind the orbit.
+  space.focus({preventScroll: true});
+  select(index + (event.key === 'ArrowRight' ? 1 : -1));
+ };
+ space.onpointerdown = event => {
+  if (!event.isPrimary || event.button !== 0) return;
+  suppressPointerClick = false;
+  drag = {id: event.pointerId, x: event.clientX, y: event.clientY, start: angle, active: false};
+ };
+ space.onpointermove = event => {
+  if (drag?.id !== event.pointerId) return;
+  const dx = event.clientX - drag.x;
+  const dy = event.clientY - drag.y;
+  if (!drag.active && Math.abs(dx) > Math.max(7, Math.abs(dy))) {
+   setPlaying(false);
+   gs.killTweensOf(motion);
+   suppressPointerClick = true;
+   drag.active = true;
+   space.setPointerCapture(event.pointerId);
+  }
+  if (drag.active) {
+   angle = drag.start - dx / 100;
+   layout();
+  }
+ };
+ space.onpointerup = event => {
+  if (drag?.id !== event.pointerId) return;
+  const wasDragging = drag.active;
+  drag = null;
+  if (space.hasPointerCapture(event.pointerId)) space.releasePointerCapture(event.pointerId);
+  if (wasDragging) select(Math.round(angle));
+ };
+ const cancelDrag = event => {
+  if (drag?.id !== event.pointerId) return;
+  const wasDragging = drag.active;
+  drag = null;
+  if (wasDragging) select(index);
+ };
+ space.onpointercancel = cancelDrag;
+ space.onlostpointercapture = event => {
+  if (event.target === space) cancelDrag(event);
+ };
+ space.onpointerleave = event => {
+  if (drag && !drag.active) cancelDrag(event);
+ };
+
+ const observer = new ResizeObserver(layout);
+ observer.observe(space);
+ layout();
+ renderCaption();
+ return {select, destroy() {
+  reduced.removeEventListener('change', motionPreference);
+  clearInterval(playback);
+  gs.killTweensOf(motion);
+  observer.disconnect();
+  if (lightbox?.open) lightbox.close();
+  host.classList.remove('certificate-exhibit', 'gallery-wide');
+ }};
 }
 
 export function projectExhibit(host,system,section){
