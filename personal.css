@@ -4,14 +4,20 @@
   --surface-rule: #b3dbff29;
 }
 
-/* The image serves both as the first frame and as the texture for the water scene. */
+/* The image is a texture source and a still fallback for the opening. */
 #entry-poster, #entry-image { position: absolute; inset: 0; width: 100%; height: 100%; }
+#entry-poster { opacity: 0; }
+.is-opening.fallback #entry-poster { opacity: 1; }
 #entry-image { object-fit: cover; object-position: 40% center; }
 #cosmos canvas { position: relative; display: block; }
-.is-opening #cosmos canvas { opacity: 0 !important; transition: opacity .55s ease; }
+.is-opening #cosmos canvas { opacity: 0 !important; transition: opacity .4s ease-out; }
 .is-opening.has-water-frame #cosmos canvas { opacity: 1 !important; }
 body:not(.is-opening) #entry-poster { display: none; }
 .is-detail .planet-caption { visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .is-opening #entry-poster { opacity: 1; }
+}
 
 /* A stable reading plane over the moving water. */
 .is-opening .launch {
@@ -50,6 +56,8 @@ body:not(.is-opening) #entry-poster { display: none; }
 .launch-copy h1 span { color: #abdcfe; }
 .launch-copy .cover-role { margin: 0; color: #e1edf7; font-size: clamp(.95rem, 1.36vw, 1.16rem); letter-spacing: .06em; line-height: 1.5; }
 .launch-copy .cover-line { margin: 13px 0 0; color: var(--ui-muted); font-size: .9rem; letter-spacing: .16em; line-height: 1.6; }
+.is-opening.has-water-frame .cover-line { opacity: .46; transition: opacity .65s ease-out, color .65s ease-out; }
+.is-opening.cover-settled .cover-line { opacity: 1; color: #e1f1ff; }
 .cover-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 30px; }
 .cover-actions #enter-universe {
   display: inline-flex;
@@ -76,7 +84,15 @@ body:not(.is-opening) #entry-poster { display: none; }
 
 .masthead { border-color: var(--surface-rule); }
 .masthead nav button { font-size: .875rem; min-height: 44px; }
-.story { max-height: calc(100dvh - 184px); overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.story {
+  max-height: calc(100dvh - 184px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.story::-webkit-scrollbar { display: none; }
+.is-flying .story { overflow: clip; }
 .story h1 { font-size: clamp(2.6rem, 5vw, 4.8rem); }
 .story h1:focus { outline: none; }
 .story .chapter { font-size: .875rem; color: var(--station-accent); margin-bottom: 16px; }

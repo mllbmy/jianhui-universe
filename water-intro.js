@@ -6,7 +6,7 @@ export function createWaterIntro(renderer){
  camera.position.z=28;
  const state={exit:0,age:0},point=new THREE.Vector2(),target=new THREE.Vector2();let energy=0,lastTime=0,lastX=0,lastY=0,imageReady=false,disposed=false;
  const placeholder=new THREE.DataTexture(new Uint8Array([3,14,26,255]),1,1);placeholder.needsUpdate=true;
- const uniforms={uTime:{value:0},uMorph:{value:0},uPhoto:{value:0},uLayer:{value:0},uLayerStrength:{value:1},uOverscan:{value:4.2},uAspect:{value:innerWidth/innerHeight},uOpacity:{value:1},uPointer:{value:point},uEnergy:{value:0},uScale:{value:innerHeight*renderer.getPixelRatio()},uImage:{value:placeholder},uImageAspect:{value:16/9},uReady:{value:0}};
+ const uniforms={uTime:{value:0},uMorph:{value:0},uPhoto:{value:0},uFormation:{value:0},uLayer:{value:0},uLayerStrength:{value:1},uOverscan:{value:4.2},uAspect:{value:innerWidth/innerHeight},uOpacity:{value:1},uPointer:{value:point},uEnergy:{value:0},uScale:{value:innerHeight*renderer.getPixelRatio()},uImage:{value:placeholder},uImageAspect:{value:16/9},uReady:{value:0}};
  // Reuse the already fetched responsive poster instead of downloading the same image again.
  const poster=document.querySelector('#entry-image');
  const usePoster=()=>{if(disposed||imageReady||!poster?.naturalWidth)return;poster.width=poster.naturalWidth;poster.height=poster.naturalHeight;const texture=new THREE.Texture(poster);texture.needsUpdate=true;texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());uniforms.uImageAspect.value=poster.naturalWidth/poster.naturalHeight;uniforms.uImage.value=texture;imageReady=true;};
@@ -33,7 +33,7 @@ export function createWaterIntro(renderer){
  }
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('aSize',new THREE.BufferAttribute(sizes,1));geometry.setAttribute('aSeed',new THREE.BufferAttribute(seeds,1));geometry.setAttribute('aType',new THREE.BufferAttribute(types,1));
  const particles=new THREE.Points(geometry,new THREE.ShaderMaterial({uniforms,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,vertexShader:`
- attribute float aSize,aSeed,aType;uniform float uScale,uPhoto;varying float vAlpha,vType;varying vec3 vColor;${waterField}
+ attribute float aSize,aSeed,aType;uniform float uScale,uPhoto,uFormation;varying float vAlpha,vType;varying vec3 vColor;${waterField}
  void main(){vec3 p;vType=aType;
   if(aType<.5){
    vec2 flowUv=vec2(position.x,fract(position.y-uTime*(.012+aSeed*.004)));
@@ -42,7 +42,7 @@ export function createWaterIntro(renderer){
    float z=position.z*4.5+sin(flowUv.y*7.+position.x*9.)*2.2+light*4.;
    float h=.41421356237*(28.-z);
    p=vec3((flowUv.x*2.-1.)*h*uAspect,(flowUv.y*2.-1.)*h,z);
-   vColor=color;vAlpha=smoothstep(.004,.16,light)*(.7+.3*aSeed)*(1.-uPhoto)*smoothstep(0.,.025,flowUv.y)*(1.-smoothstep(.975,1.,flowUv.y));
+   vColor=color;vAlpha=smoothstep(.004,.16,light)*(.7+.3*aSeed)*(1.-uPhoto)*mix(.23,1.,uFormation)*smoothstep(0.,.025,flowUv.y)*(1.-smoothstep(.975,1.,flowUv.y));
    vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
    gl_PointSize=clamp(uScale*${narrow?'0.0076':'0.0046'}*(28.-z)/max(1.,-mv.z),.8,10.);
   }else{
@@ -58,7 +58,7 @@ export function createWaterIntro(renderer){
  #include <colorspace_fragment>
  }`}));particles.frustumCulled=false;scene.add(particles);
  return {scene,camera,state,complete(){state.age=Math.max(state.age,5.6);},resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();uniforms.uAspect.value=camera.aspect;uniforms.uScale.value=innerHeight*renderer.getPixelRatio();fitCards();},update(time,pointer,reduced){
-  const dt=lastTime===0?0:Math.min(.06,Math.max(0,time-lastTime));lastTime=time;if(reduced)state.age=5.6;else if(imageReady)state.age+=dt;target.set(pointer.x*23.2*camera.aspect,pointer.y*23.2);const speed=Math.hypot(pointer.x-lastX,pointer.y-lastY);lastX=pointer.x;lastY=pointer.y;const wanted=reduced?0:Math.min(1,speed*85);energy+=(wanted-energy)*(1-Math.exp(-Math.max(dt,.016)*4));point.lerp(target,.065);uniforms.uTime.value=reduced?0:state.age;uniforms.uEnergy.value=energy;uniforms.uOpacity.value=1-state.exit;if(imageReady)uniforms.uReady.value=1;
+  const dt=lastTime===0?0:Math.min(.09,Math.max(0,time-lastTime));lastTime=time;if(reduced)state.age=5.6;else if(imageReady)state.age+=dt;target.set(pointer.x*23.2*camera.aspect,pointer.y*23.2);const speed=Math.hypot(pointer.x-lastX,pointer.y-lastY);lastX=pointer.x;lastY=pointer.y;const wanted=reduced?0:Math.min(1,speed*85);energy+=(wanted-energy)*(1-Math.exp(-Math.max(dt,.016)*4));point.lerp(target,.065);uniforms.uTime.value=reduced?0:state.age;uniforms.uEnergy.value=energy;uniforms.uOpacity.value=1-state.exit;if(imageReady)uniforms.uReady.value=1;
   const smooth=x=>{x=Math.max(0,Math.min(1,x));return x*x*x*(x*(x*6-15)+10);};
   const progress=Math.min(1,state.age/5.6),e=smooth(state.age/4.5),remaining=1-e;
   const morph=0,photo=smooth((state.age-3.7)/1.9);
@@ -68,7 +68,7 @@ export function createWaterIntro(renderer){
   camera.position.set(targetX+Math.sin(angle)*radius,3.5*Math.sin(Math.PI*e),Math.cos(angle)*radius-state.exit*8);
   camera.lookAt(targetX,targetY,0);camera.updateMatrixWorld();
   // The cloud loosens before the image appears; the final dolly continues through the handover.
-  uniforms.uMorph.value=morph;uniforms.uPhoto.value=photo;uniforms.uLayerStrength.value=1-e;veil.visible=false;
+  uniforms.uMorph.value=morph;uniforms.uFormation.value=smooth(state.age/.62);uniforms.uPhoto.value=photo;uniforms.uLayerStrength.value=1-e;veil.visible=false;
   background.visible=imageReady&&photo>0;
   farProbe.set(0,0,background.position.z).project(camera);midProbe.set(0,0,veil.position.z).project(camera);
   Object.assign(cameraStage,{progress,orbit:110*remaining,yaw:Math.atan2(camera.position.x-targetX,camera.position.z)*180/Math.PI,farX:farProbe.x,midX:midProbe.x});
